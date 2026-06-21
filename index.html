@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Пикассо — Конструктор открыток</title>
+  <link href="https://db.onlinewebfonts.com/c/37086b994764dba84b2ee0f1083bfeed?family=SB+Sans+Interface" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">Пикассо</div>
+      <nav class="steps-nav">
+        <div class="step-item active" id="stepNav1">
+          <span class="step-num">1</span>
+          <span class="step-label">Фон</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="stepNav2">
+          <span class="step-num">2</span>
+          <span class="step-label">Текст</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item" id="stepNav3">
+          <span class="step-num">3</span>
+          <span class="step-label">Скачать</span>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- STAGE 1: Выбор фона -->
+    <section class="stage active" id="stage1">
+      <div class="stage-wrap">
+        <div class="stage-header">
+          <h1>Выберите фон</h1>
+          <p>Нажмите на шаблон для выбора</p>
+        </div>
+
+        <div class="templates-grid" id="templatesGrid"></div>
+
+        <div class="stage-footer">
+          <button class="btn-primary" onclick="goToStage(2)">Далее →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: Текст -->
+    <section class="stage" id="stage2">
+      <div class="stage2-layout">
+
+        <!-- Форма -->
+        <div class="form-panel">
+          <div class="stage-header">
+            <h2>Добавьте текст</h2>
+            <p>Пустые поля не отображаются на открытке</p>
+          </div>
+
+          <div class="logo-toggle-field">
+            <span class="logo-toggle-label">Логотип Сбербанка на открытке</span>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="showLogo" value="yes" onchange="syncPreview()"> Да</label>
+              <label class="radio-label"><input type="radio" name="showLogo" value="no" checked onchange="syncPreview()"> Нет</label>
+            </div>
+          </div>
+
+          <div class="fields">
+            <div class="field">
+              <label for="fieldHeader">Заголовок</label>
+              <input type="text" id="fieldHeader" value="С днём рождения!" oninput="syncPreview()" maxlength="60">
+            </div>
+            <div class="field">
+              <label for="fieldAppeal">Обращение</label>
+              <input type="text" id="fieldAppeal" placeholder="Уважаемый Иван Иванович" oninput="syncPreview()" maxlength="80">
+            </div>
+            <div class="field">
+              <div class="field-label-row">
+                <label for="fieldDescription">Текст поздравления</label>
+                <button class="btn-clear" onclick="clearDescription()" type="button">Очистить</button>
+              </div>
+              <textarea id="fieldDescription" rows="3" placeholder="Введите текст или выберите готовый шаблон ниже" oninput="syncPreview(); updateCharCount(); autoResize(this)" maxlength="500"></textarea>
+              <span class="char-count" id="charDescription">0 / 500</span>
+            </div>
+            <div class="field">
+              <label for="fieldFooter">Подпись</label>
+              <input type="text" id="fieldFooter" placeholder="Иван Петров" oninput="syncPreview()" maxlength="100">
+            </div>
+          </div>
+
+          <!-- Готовые тексты -->
+          <div class="accordion">
+            <button class="accordion-header" onclick="toggleAccordion('textTemplatesBody', 'arrowTextTemplates')">
+              <span>Готовые тексты</span>
+              <span class="accordion-arrow" id="arrowTextTemplates">▼</span>
+            </button>
+            <div class="accordion-body" id="textTemplatesBody">
+              <div class="text-templates-list" id="textTemplatesList"></div>
+            </div>
+          </div>
+
+          <!-- Помощь ИИ -->
+          <div class="accordion">
+            <button class="accordion-header" onclick="toggleAccordion('aiBody', 'arrowAi')">
+              <span>Помощь ИИ</span>
+              <span class="accordion-arrow" id="arrowAi">▼</span>
+            </button>
+            <div class="accordion-body" id="aiBody">
+              <div class="ai-form">
+                <p class="ai-hint">Заполните параметры — получите промт и вставьте его в ChatGPT или другой ИИ-сервис.</p>
+                <div class="ai-field">
+                  <label>Пол получателя</label>
+                  <div class="radio-group">
+                    <label class="radio-label"><input type="radio" name="aiGender" value="male" checked> Мужчина</label>
+                    <label class="radio-label"><input type="radio" name="aiGender" value="female"> Женщина</label>
+                  </div>
+                </div>
+                <div class="ai-field">
+                  <label for="aiPosition">Должность</label>
+                  <input type="text" id="aiPosition" placeholder="Руководитель отдела">
+                </div>
+                <div class="ai-field">
+                  <label>Стиль</label>
+                  <div class="radio-group">
+                    <label class="radio-label"><input type="radio" name="aiStyle" value="soulful" checked> Душевное</label>
+                    <label class="radio-label"><input type="radio" name="aiStyle" value="official"> Деловое</label>
+                  </div>
+                </div>
+                <button class="btn-secondary full-width" onclick="generatePrompt()">Создать промт</button>
+                <div class="ai-result hidden" id="aiResult">
+                  <textarea id="aiPromptText" rows="7" readonly></textarea>
+                  <button class="btn-copy" id="btnCopy" onclick="copyPrompt()">Скопировать</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stage-nav-row">
+            <button class="btn-secondary" onclick="goToStage(1)">← Назад</button>
+            <button class="btn-primary" onclick="goToStage(3)">Далее →</button>
+          </div>
+        </div>
+
+        <!-- Предпросмотр -->
+        <div class="preview-panel">
+          <div class="preview-sticky">
+            <p class="preview-label">Предпросмотр</p>
+            <div class="card" id="previewCard">
+              <div class="card-image-block">
+                <img class="card-bg-img" id="previewBgImg" src="" alt="">
+                <img class="sber-logo" src="assets/images/sber-logo.png" alt="Сбер">
+              </div>
+              <div class="card-text">
+                <p class="c-header" id="previewHeader">С днём рождения!</p>
+                <p class="c-appeal" id="previewAppeal"></p>
+                <p class="c-description" id="previewDescription"></p>
+                <p class="c-footer" id="previewFooter"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- STAGE 3: Скачать -->
+    <section class="stage" id="stage3">
+      <div class="stage-wrap center">
+        <div class="stage-header">
+          <h2>Открытка готова!</h2>
+          <p>Скачайте в удобном формате</p>
+        </div>
+
+        <div class="final-card-wrap">
+          <div class="card card-lg" id="finalCard">
+            <div class="card-image-block">
+              <img class="card-bg-img" id="finalBgImg" src="" alt="">
+              <img class="sber-logo" src="assets/images/sber-logo.png" alt="Сбер">
+            </div>
+            <div class="card-text">
+              <p class="c-header" id="finalHeader"></p>
+              <p class="c-appeal" id="finalAppeal"></p>
+              <p class="c-description" id="finalDescription"></p>
+              <p class="c-footer" id="finalFooter"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="download-row">
+          <button class="btn-download" onclick="downloadPNG()">↓ PNG</button>
+          <button class="btn-download btn-outline" onclick="downloadPDF()">↓ PDF</button>
+        </div>
+
+        <div class="stage3-nav">
+          <button class="btn-ghost btn-ghost-muted" onclick="goToStage(2)">← Вернуться и изменить текст</button>
+          <button class="btn-ghost" onclick="resetApp()">Создать новую открытку</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Оверлей загрузки -->
+  <div class="loading-overlay hidden" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>Подготовка открытки…</p>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.3.0/dist/dom-to-image-more.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</body>
+</html>
