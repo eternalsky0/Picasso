@@ -380,10 +380,31 @@ async function loadExportLibs() {
   ]);
 }
 
-function waitForImage(imgId) {
-  const img = document.getElementById(imgId);
-  if (!img || !img.src || img.complete) return Promise.resolve();
-  return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+async function srcToDataUrl(src) {
+  if (!src || src.startsWith('data:')) return src;
+  try {
+    const blob = await fetch(src).then(r => r.blob());
+    return await new Promise(resolve => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.readAsDataURL(blob);
+    });
+  } catch {
+    return src;
+  }
+}
+
+async function prepareCardForCapture(cardId) {
+  const imgs = document.querySelectorAll(`#${cardId} img`);
+  await Promise.all([...imgs].map(async img => {
+    if (img.src && !img.src.startsWith('data:')) {
+      img.src = await srcToDataUrl(img.src);
+    }
+  }));
+  await Promise.all([...imgs].map(img => new Promise(resolve => {
+    if (img.complete && img.naturalHeight !== 0) resolve();
+    else { img.onload = resolve; img.onerror = resolve; }
+  })));
 }
 
 function captureCard(card) {
@@ -405,7 +426,7 @@ async function downloadPNG() {
     return;
   }
 
-  await waitForImage('finalBgImg');
+  await prepareCardForCapture('finalCard');
 
   try {
     const dataUrl = await captureCard(card);
@@ -441,7 +462,7 @@ async function downloadPDF() {
     return;
   }
 
-  await waitForImage('finalBgImg');
+  await prepareCardForCapture('finalCard');
 
   try {
     const dataUrl = await captureCard(card);
