@@ -373,13 +373,26 @@ function loadScript(src) {
   });
 }
 
-function loadImg(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
-  });
+async function loadImg(src) {
+  // Загружаем через fetch → blob URL чтобы избежать canvas taint на iOS
+  try {
+    const blob = await fetch(src).then(r => r.blob());
+    const objectUrl = URL.createObjectURL(blob);
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(objectUrl); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('img load failed')); };
+      img.src = objectUrl;
+    });
+  } catch {
+    // Fallback: прямая загрузка (для data URL из загруженного фото)
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
 }
 
 async function buildCardCanvas() {
