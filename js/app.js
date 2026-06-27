@@ -373,27 +373,6 @@ function loadScript(src) {
   });
 }
 
-async function loadImg(src) {
-  // Загружаем через fetch → blob URL чтобы избежать canvas taint на iOS
-  try {
-    const blob = await fetch(src).then(r => r.blob());
-    const objectUrl = URL.createObjectURL(blob);
-    return await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => { URL.revokeObjectURL(objectUrl); resolve(img); };
-      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('img load failed')); };
-      img.src = objectUrl;
-    });
-  } catch {
-    // Fallback: прямая загрузка (для data URL из загруженного фото)
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-}
 
 async function buildCardCanvas() {
   const SCALE = 3;
@@ -469,14 +448,14 @@ async function buildCardCanvas() {
   ctx.fillStyle = '#0D9E92';
   ctx.fillRect(0, 0, CARD_W, IMG_H);
 
-  const bgSrc = state.customImageSrc || (state.templateIndex >= 0 ? TEMPLATE_IMAGES[state.templateIndex] : null);
-  if (bgSrc) {
+  // Берём уже загруженные img-элементы из DOM — не делаем повторных запросов
+  const bgImgEl = document.getElementById('finalBgImg');
+  if (bgImgEl && bgImgEl.naturalWidth > 0) {
     try {
-      const bgImg = await loadImg(bgSrc);
-      const scale = Math.max(CARD_W / bgImg.naturalWidth, IMG_H / bgImg.naturalHeight);
-      const dw = bgImg.naturalWidth * scale, dh = bgImg.naturalHeight * scale;
-      ctx.drawImage(bgImg, (CARD_W - dw) / 2, (IMG_H - dh) / 2, dw, dh);
-    } catch (e) { console.warn('bg image error', e); }
+      const scale = Math.max(CARD_W / bgImgEl.naturalWidth, IMG_H / bgImgEl.naturalHeight);
+      const dw = bgImgEl.naturalWidth * scale, dh = bgImgEl.naturalHeight * scale;
+      ctx.drawImage(bgImgEl, (CARD_W - dw) / 2, (IMG_H - dh) / 2, dw, dh);
+    } catch (e) { console.warn('drawImage bg error', e); }
   }
 
   // Gradient overlay on image
@@ -486,13 +465,15 @@ async function buildCardCanvas() {
   ctx.fillStyle = g1;
   ctx.fillRect(0, IMG_H * 0.45, CARD_W, IMG_H * 0.55);
 
-  // Logo
+  // Logo — тоже из DOM
   if (showLogo) {
-    try {
-      const logo = await loadImg('assets/logo/sber-logo.png');
-      const lw = 72 * SCALE;
-      ctx.drawImage(logo, 12 * SCALE, 12 * SCALE, lw, Math.round(lw * logo.naturalHeight / logo.naturalWidth));
-    } catch {}
+    const logoEl = document.querySelector('#finalCard .sber-logo');
+    if (logoEl && logoEl.naturalWidth > 0) {
+      try {
+        const lw = 72 * SCALE;
+        ctx.drawImage(logoEl, 12 * SCALE, 12 * SCALE, lw, Math.round(lw * logoEl.naturalHeight / logoEl.naturalWidth));
+      } catch {}
+    }
   }
 
   // Text block
@@ -529,18 +510,11 @@ async function downloadPNG() {
   try {
     const canvas = await buildCardCanvas();
     const dataUrl = canvas.toDataURL('image/png');
-    const blob = await fetch(dataUrl).then(r => r.blob());
-    const file = new File([blob], 'открытка.png', { type: 'image/png' });
-    overlay.classList.add('hidden');
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file] });
-    } else {
-      const a = document.createElement('a');
-      a.download = 'открытка.png';
-      a.href = dataUrl;
-      a.click();
-      showToast('PNG сохранён');
-    }
+    const a = document.createElement('a');
+    a.download = 'открытка.png';
+    a.href = dataUrl;
+    a.click();
+    showToast('PNG сохранён');
   } catch (err) {
     console.error(err);
     overlay.classList.add('hidden');
