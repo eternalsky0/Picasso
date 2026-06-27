@@ -803,6 +803,33 @@ main {
 .btn-secondary:hover { background: var(--gray-200); }
 .btn-secondary.full-width { width: 100%; }
 
+.download-hint {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.download-hint-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--gray-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.download-hint-steps .ai-step-num {
+  background: var(--gray-400);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.download-hint-steps .ai-step {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
 .stage3-nav {
   display: flex;
   flex-direction: column;
