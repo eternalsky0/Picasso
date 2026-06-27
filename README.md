@@ -90,18 +90,19 @@ Picasso-NEW/
 
 ## Добавление новых фонов
 
-1. Положить изображение в `assets/images/` (логотипы хранятся отдельно в `assets/logo/`)
-2. Добавить имя файла в массив `TEMPLATE_IMAGES` в начале `js/app.js`
+1. Сжать изображение в WebP (рекомендуется [squoosh.app](https://squoosh.app), quality 75–80%)
+2. Положить файл в `assets/images/new/`
+3. Добавить путь в массив `TEMPLATE_IMAGES` в начале `js/app.js`
 
 ```js
 const TEMPLATE_IMAGES = [
-  'assets/images/preset_image_1.png',
+  'assets/images/new/preset_image_1.webp',
   // ... добавить новый путь сюда
-  'assets/images/new_background.jpg',
+  'assets/images/new/new_background.webp',
 ];
 ```
 
-> Поддерживаются форматы PNG и JPG. Логотипы Сбера (`sber-logo.png`, `sber-logo1.png`) лежат в `assets/logo/` и не попадают в список фонов.
+> Оригиналы хранятся в `assets/images/old/` как резерв. Логотипы Сбера лежат в `assets/logo/`.
 
 ## Добавление готовых текстов
 
