@@ -2,6 +2,7 @@
 // Constants
 // =====================
 
+// Все фоновые изображения из assets/images/ — добавьте новый файл в папку и укажите имя здесь
 const TEMPLATE_IMAGES = [
   'assets/images/preset_image_1.png',
   'assets/images/preset_image_2.png',
@@ -10,6 +11,9 @@ const TEMPLATE_IMAGES = [
   'assets/images/preset_image_5.png',
   'assets/images/preset_image_6.png',
   'assets/images/preset_image_7.png',
+  'assets/images/3_1920x1080_ЛЕТО_2025.jpg',
+  'assets/images/5_1920x1080_ЛЕТО_2025.jpg',
+  'assets/images/6_1920x1080_ЛЕТО_2025.jpg',
 ];
 
 const TEXT_PRESETS = [
@@ -216,6 +220,26 @@ function autoResize(el) {
   el.style.height = el.scrollHeight + 'px';
 }
 
+async function pasteFromClipboard() {
+  if (!navigator.clipboard?.readText) {
+    showToast('Вставка из буфера недоступна — вставьте текст вручную');
+    return;
+  }
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text.trim()) { showToast('Буфер обмена пуст'); return; }
+    const field = document.getElementById('fieldDescription');
+    field.value = text.trim();
+    autoResize(field);
+    syncPreview();
+    updateCharCount();
+    document.querySelectorAll('.tpl-item').forEach(el => el.classList.remove('active'));
+    showToast('Текст вставлен');
+  } catch {
+    showToast('Не удалось прочитать буфер — вставьте текст вручную');
+  }
+}
+
 function clearDescription() {
   const el = document.getElementById('fieldDescription');
   el.value = '';
@@ -245,8 +269,7 @@ function renderTextPresets() {
   TEXT_PRESETS.forEach((text, i) => {
     const btn = document.createElement('button');
     btn.className = 'tpl-item';
-    btn.textContent = text.length > 120 ? text.slice(0, 117) + '…' : text;
-    btn.title = text;
+    btn.textContent = text;
     btn.onclick = () => applyTextPreset(text, i);
     list.appendChild(btn);
   });
@@ -308,6 +331,13 @@ function generatePrompt() {
   showToast('Промт готов — скопируйте и вставьте в ИИ-сервис');
 }
 
+function togglePresets() {
+  const list = document.getElementById('textTemplatesList');
+  const arrow = document.getElementById('presetsArrow');
+  const isHidden = list.classList.toggle('hidden');
+  arrow.style.transform = isHidden ? '' : 'rotate(180deg)';
+}
+
 function copyPrompt() {
   const text = document.getElementById('aiPromptText')?.value;
   if (!text) return;
@@ -332,10 +362,34 @@ function copyPrompt() {
 // Export: PNG & PDF
 // =====================
 
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function loadExportLibs() {
+  await Promise.all([
+    loadScript('https://cdn.jsdelivr.net/npm/dom-to-image-more@3.3.0/dist/dom-to-image-more.min.js'),
+    loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'),
+  ]);
+}
+
 async function downloadPNG() {
   const card = document.getElementById('finalCard');
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
+
+  try { await loadExportLibs(); } catch {
+    showToast('Ошибка загрузки библиотек — проверьте интернет');
+    overlay.classList.add('hidden');
+    return;
+  }
 
   try {
     const dataUrl = await domtoimage.toPng(card, {
@@ -366,6 +420,12 @@ async function downloadPDF() {
   const card = document.getElementById('finalCard');
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
+
+  try { await loadExportLibs(); } catch {
+    showToast('Ошибка загрузки библиотек — проверьте интернет');
+    overlay.classList.add('hidden');
+    return;
+  }
 
   try {
     const dataUrl = await domtoimage.toPng(card, {

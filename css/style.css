@@ -407,13 +407,29 @@ main {
   box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
 }
 
+.field-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .char-count {
   font-size: 11px;
   color: var(--gray-400);
-  text-align: right;
 }
 
 .char-count.warn { color: #DC2626; }
+
+.btn-paste {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--accent);
+  padding: 0;
+  transition: opacity 0.15s;
+}
+
+.btn-paste:hover { opacity: 0.7; }
 
 /* Accordion */
 .accordion {
@@ -456,11 +472,34 @@ main {
 .accordion-arrow.open { transform: rotate(180deg); }
 
 /* Text Templates */
+.presets-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 13px;
+  background: var(--gray-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  transition: background 0.15s;
+}
+
+.presets-toggle:hover { background: var(--gray-100); }
+
+.presets-arrow {
+  font-size: 9px;
+  color: var(--gray-400);
+  transition: transform 0.25s;
+}
+
 .text-templates-list {
-  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 7px;
+  margin-top: 7px;
 }
 
 .tpl-item {
@@ -495,6 +534,51 @@ main {
   flex-direction: column;
   gap: 14px;
 }
+
+/* AI Steps instruction */
+.ai-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--gray-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.ai-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--gray-700);
+  line-height: 1.45;
+}
+
+.ai-step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+/* AI result label */
+.ai-result-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
 
 .ai-hint {
   font-size: 13px;

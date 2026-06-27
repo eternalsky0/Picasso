@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Пикассо — Конструктор открыток</title>
+  <link rel="preconnect" href="https://db.onlinewebfonts.com">
   <link href="https://db.onlinewebfonts.com/c/37086b994764dba84b2ee0f1083bfeed?family=SB+Sans+Interface" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -87,22 +88,21 @@
                 <button class="btn-clear" onclick="clearDescription()" type="button">Очистить</button>
               </div>
               <textarea id="fieldDescription" rows="3" placeholder="Введите текст или выберите готовый шаблон ниже" oninput="syncPreview(); updateCharCount(); autoResize(this)" maxlength="500"></textarea>
-              <span class="char-count" id="charDescription">0 / 500</span>
+              <div class="field-bottom-row">
+                <span class="char-count" id="charDescription">0 / 500</span>
+                <button class="btn-paste" type="button" onclick="pasteFromClipboard()">⎘ Вставить скопированное</button>
+              </div>
+            </div>
+            <div class="field presets-inline">
+              <button class="presets-toggle" onclick="togglePresets()" id="presetsToggle">
+                <span>Готовые тексты</span>
+                <span class="presets-arrow" id="presetsArrow">▼</span>
+              </button>
+              <div class="text-templates-list hidden" id="textTemplatesList"></div>
             </div>
             <div class="field">
               <label for="fieldFooter">Подпись</label>
               <input type="text" id="fieldFooter" placeholder="Иван Петров" oninput="syncPreview()" maxlength="100">
-            </div>
-          </div>
-
-          <!-- Готовые тексты -->
-          <div class="accordion">
-            <button class="accordion-header" onclick="toggleAccordion('textTemplatesBody', 'arrowTextTemplates')">
-              <span>Готовые тексты</span>
-              <span class="accordion-arrow" id="arrowTextTemplates">▼</span>
-            </button>
-            <div class="accordion-body" id="textTemplatesBody">
-              <div class="text-templates-list" id="textTemplatesList"></div>
             </div>
           </div>
 
@@ -114,7 +114,11 @@
             </button>
             <div class="accordion-body" id="aiBody">
               <div class="ai-form">
-                <p class="ai-hint">Заполните параметры — получите промт и вставьте его в ChatGPT или другой ИИ-сервис.</p>
+                <div class="ai-steps">
+                  <div class="ai-step"><span class="ai-step-num">1</span><span>Укажите параметры и нажмите «Создать промт»</span></div>
+                  <div class="ai-step"><span class="ai-step-num">2</span><span>Скопируйте промт и вставьте в ChatGPT или любой другой ИИ</span></div>
+                  <div class="ai-step"><span class="ai-step-num">3</span><span>Понравился результат — скопируйте и вставьте в поле «Текст поздравления»</span></div>
+                </div>
                 <div class="ai-field">
                   <label>Пол получателя</label>
                   <div class="radio-group">
@@ -135,8 +139,9 @@
                 </div>
                 <button class="btn-secondary full-width" onclick="generatePrompt()">Создать промт</button>
                 <div class="ai-result hidden" id="aiResult">
+                  <p class="ai-result-label">Промт для ИИ — скопируйте и вставьте в ChatGPT:</p>
                   <textarea id="aiPromptText" rows="7" readonly></textarea>
-                  <button class="btn-copy" id="btnCopy" onclick="copyPrompt()">Скопировать</button>
+                  <button class="btn-copy" id="btnCopy" onclick="copyPrompt()">Скопировать промт</button>
                 </div>
               </div>
             </div>
@@ -155,7 +160,7 @@
             <div class="card" id="previewCard">
               <div class="card-image-block">
                 <img class="card-bg-img" id="previewBgImg" src="" alt="">
-                <img class="sber-logo" src="assets/images/sber-logo.png" alt="Сбер">
+                <img class="sber-logo" src="assets/logo/sber-logo.png" alt="Сбер">
               </div>
               <div class="card-text">
                 <p class="c-header" id="previewHeader">С днём рождения!</p>
@@ -182,7 +187,7 @@
           <div class="card card-lg" id="finalCard">
             <div class="card-image-block">
               <img class="card-bg-img" id="finalBgImg" src="" alt="">
-              <img class="sber-logo" src="assets/images/sber-logo.png" alt="Сбер">
+              <img class="sber-logo" src="assets/logo/sber-logo.png" alt="Сбер">
             </div>
             <div class="card-text">
               <p class="c-header" id="finalHeader"></p>
@@ -217,7 +222,5 @@
   </div>
 
   <script src="js/app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@3.3.0/dist/dom-to-image-more.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </body>
 </html>
