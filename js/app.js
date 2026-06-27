@@ -380,6 +380,20 @@ async function loadExportLibs() {
   ]);
 }
 
+function waitForImage(imgId) {
+  const img = document.getElementById(imgId);
+  if (!img || !img.src || img.complete) return Promise.resolve();
+  return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+}
+
+function captureCard(card) {
+  return domtoimage.toPng(card, {
+    width: card.offsetWidth * 3,
+    height: card.offsetHeight * 3,
+    style: { transform: 'scale(3)', transformOrigin: 'top left', borderRadius: '0' },
+  });
+}
+
 async function downloadPNG() {
   const card = document.getElementById('finalCard');
   const overlay = document.getElementById('loadingOverlay');
@@ -391,28 +405,28 @@ async function downloadPNG() {
     return;
   }
 
-  try {
-    const dataUrl = await domtoimage.toPng(card, {
-      cacheBust: true,
-      width: card.offsetWidth * 3,
-      height: card.offsetHeight * 3,
-      style: {
-        transform: 'scale(3)',
-        transformOrigin: 'top left',
-        borderRadius: '0',
-      }
-    });
+  await waitForImage('finalBgImg');
 
-    const link = document.createElement('a');
-    link.download = 'открытка.png';
-    link.href = dataUrl;
-    link.click();
-    showToast('PNG сохранён');
+  try {
+    const dataUrl = await captureCard(card);
+    const blob = await fetch(dataUrl).then(r => r.blob());
+    const file = new File([blob], 'открытка.png', { type: 'image/png' });
+
+    overlay.classList.add('hidden');
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });
+    } else {
+      const link = document.createElement('a');
+      link.download = 'открытка.png';
+      link.href = dataUrl;
+      link.click();
+      showToast('PNG сохранён');
+    }
   } catch (err) {
     console.error(err);
-    showToast('Ошибка при создании PNG');
-  } finally {
     overlay.classList.add('hidden');
+    showToast('Ошибка при создании PNG');
   }
 }
 
@@ -427,17 +441,10 @@ async function downloadPDF() {
     return;
   }
 
+  await waitForImage('finalBgImg');
+
   try {
-    const dataUrl = await domtoimage.toPng(card, {
-      cacheBust: true,
-      width: card.offsetWidth * 3,
-      height: card.offsetHeight * 3,
-      style: {
-        transform: 'scale(3)',
-        transformOrigin: 'top left',
-        borderRadius: '0',
-      }
-    });
+    const dataUrl = await captureCard(card);
 
     const img = new Image();
     img.onload = function () {
