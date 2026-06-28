@@ -367,48 +367,180 @@ function copyPrompt() {
 }
 
 // =====================
-// Export: PNG & PDF
+// Export: Canvas-based PNG & PDF
 // =====================
+
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
     const s = document.createElement('script');
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = reject;
+    s.src = src; s.onload = resolve; s.onerror = reject;
     document.head.appendChild(s);
   });
 }
 
-async function loadExportLibs() {
-  await Promise.all([
-    loadScript('https://cdn.jsdelivr.net/npm/dom-to-image-more@3.3.0/dist/dom-to-image-more.min.js'),
-    loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'),
-  ]);
+// Загружаем изображение через обычный Image() — без XHR, без CORS проблем
+function loadImg(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
 }
 
-const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  for (const para of text.split('\n')) {
+    const words = para.split(' ');
+    let line = '';
+    for (const word of words) {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        ctx.fillText(line, x, y);
+        y += lineHeight;
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    if (line) { ctx.fillText(line, x, y); y += lineHeight; }
+  }
+  return y;
+}
 
-async function renderCard() {
-  const card = document.getElementById('finalCard');
-  await loadExportLibs();
-  return domtoimage.toPng(card, {
-    cacheBust: true,
-    width: card.offsetWidth * 3,
-    height: card.offsetHeight * 3,
-    style: { transform: 'scale(3)', transformOrigin: 'top left', borderRadius: '0' },
-  });
+function measureWrappedHeight(ctx, text, maxWidth, lineHeight) {
+  let h = 0;
+  for (const para of text.split('\n')) {
+    const words = para.split(' ');
+    let line = '';
+    for (const word of words) {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && line) { h += lineHeight; line = word; }
+      else line = test;
+    }
+    h += lineHeight;
+  }
+  return h || lineHeight;
+}
+
+async function buildCardDataUrl() {
+  const S = 3;
+  const cardEl = document.getElementById('finalCard');
+  const W = cardEl.offsetWidth * S;
+  const IMG_H = Math.round(W * 3 / 4);   // соотношение 4:3 из CSS
+  const PAD_X = 16 * S;
+  const PAD_TOP = 14 * S;
+  const PAD_BOT = 18 * S;
+  const FONT = '"SB Sans Interface", Arial, sans-serif';
+  const TEXT_W = W - PAD_X * 2;
+
+  const bgSrc = state.customImageSrc || (state.templateIndex >= 0 ? TEMPLATE_IMAGES[state.templateIndex] : null);
+  const showLogo = document.querySelector('input[name="showLogo"]:checked')?.value === 'yes';
+
+  const [bgImg, logoImg] = await Promise.all([
+    bgSrc ? loadImg(bgSrc).catch(() => null) : Promise.resolve(null),
+    showLogo ? loadImg('assets/logo/sber-logo.png').catch(() => null) : Promise.resolve(null),
+  ]);
+
+  await document.fonts.ready;
+
+  const header      = val('fieldHeader');
+  const appeal      = val('fieldAppeal');
+  const description = val('fieldDescription');
+  const footer      = val('fieldFooter');
+
+  // Измеряем высоту текстового блока
+  const mc = document.createElement('canvas');
+  mc.width = W; mc.height = 1;
+  const mCtx = mc.getContext('2d');
+  let textH = PAD_TOP;
+  if (header)      { mCtx.font = `600 ${19*S}px ${FONT}`;  textH += measureWrappedHeight(mCtx, header,      TEXT_W, Math.round(19*S*1.2))  + 8*S; }
+  if (appeal)      {                                          textH += 12*S + 5*S; }
+  if (description) { mCtx.font = `${11*S}px ${FONT}`;       textH += measureWrappedHeight(mCtx, description, TEXT_W, Math.round(11*S*1.55)) + 8*S; }
+  if (footer)      {                                          textH += 11*S; }
+  textH += PAD_BOT;
+
+  const TOTAL_H = IMG_H + Math.max(textH, 60*S);
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = TOTAL_H;
+  const ctx = canvas.getContext('2d');
+
+  // 1. Фон блока изображения
+  ctx.fillStyle = '#0D9E92';
+  ctx.fillRect(0, 0, W, IMG_H);
+
+  // 2. Фоновое изображение (object-fit: cover)
+  if (bgImg) {
+    const iA = bgImg.width / bgImg.height, cA = W / IMG_H;
+    let dW, dH, dX, dY;
+    if (iA > cA) { dH = IMG_H; dW = dH * iA; dX = (W-dW)/2; dY = 0; }
+    else          { dW = W;    dH = dW / iA;  dX = 0;        dY = (IMG_H-dH)/2; }
+    ctx.drawImage(bgImg, dX, dY, dW, dH);
+  }
+
+  // 3. Градиентный оверлей (нижние 55%)
+  const gY = IMG_H * 0.45;
+  const g = ctx.createLinearGradient(0, gY, 0, IMG_H);
+  g.addColorStop(0, 'rgba(13,158,146,0)');
+  g.addColorStop(1, 'rgba(13,158,146,1)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, gY, W, IMG_H - gY);
+
+  // 4. Логотип
+  if (logoImg) {
+    const lW = 72*S, lH = lW * logoImg.height / logoImg.width;
+    ctx.drawImage(logoImg, 12*S, 12*S, lW, lH);
+  }
+
+  // 5. Текстовый блок
+  const tg = ctx.createLinearGradient(0, IMG_H, 0, TOTAL_H);
+  tg.addColorStop(0, '#0D9E92');
+  tg.addColorStop(1, '#006B60');
+  ctx.fillStyle = tg;
+  ctx.fillRect(0, IMG_H, W, TOTAL_H - IMG_H);
+
+  // 6. Текст
+  ctx.textBaseline = 'top';
+  let y = IMG_H + PAD_TOP;
+
+  if (header) {
+    ctx.font = `600 ${19*S}px ${FONT}`;
+    ctx.fillStyle = '#ffffff';
+    y = wrapText(ctx, header, PAD_X, y, TEXT_W, Math.round(19*S*1.2));
+    y += 8*S;
+  }
+  if (appeal) {
+    ctx.font = `500 ${12*S}px ${FONT}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(appeal, PAD_X, y);
+    y += 12*S + 5*S;
+  }
+  if (description) {
+    ctx.font = `${11*S}px ${FONT}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    y = wrapText(ctx, description, PAD_X, y, TEXT_W, Math.round(11*S*1.55));
+    y += 8*S;
+  }
+  if (footer) {
+    ctx.font = `${11*S}px ${FONT}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText(footer, PAD_X, y);
+  }
+
+  return canvas.toDataURL('image/png');
 }
 
 async function downloadPNG() {
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
   try {
-    const dataUrl = await renderCard();
+    const dataUrl = await buildCardDataUrl();
 
     if (isIOS) {
-      // Показываем PNG прямо на месте карточки — пользователь зажимает и сохраняет
+      // На iOS показываем изображение на месте карточки — зажать → Сохранить фото
       const renderedImg = document.getElementById('finalRenderedImg');
       renderedImg.src = dataUrl;
       renderedImg.classList.remove('hidden');
@@ -435,7 +567,8 @@ async function downloadPDF() {
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
   try {
-    const dataUrl = await renderCard();
+    await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+    const dataUrl = await buildCardDataUrl();
     const img = new Image();
     img.onload = function () {
       const { jsPDF } = window.jspdf;
