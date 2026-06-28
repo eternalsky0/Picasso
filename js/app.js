@@ -533,6 +533,15 @@ async function buildCardDataUrl() {
   return canvas.toDataURL('image/png');
 }
 
+function dataUrlToBlob(dataUrl) {
+  const [header, data] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const bytes = atob(data);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
 async function downloadPNG() {
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
@@ -540,14 +549,20 @@ async function downloadPNG() {
     const dataUrl = await buildCardDataUrl();
 
     if (isIOS) {
-      // На iOS показываем изображение на месте карточки — зажать → Сохранить фото
-      const renderedImg = document.getElementById('finalRenderedImg');
-      renderedImg.src = dataUrl;
-      renderedImg.classList.remove('hidden');
-      document.getElementById('finalCard').classList.add('hidden');
-      document.getElementById('iosSaveHint').classList.remove('hidden');
-      document.getElementById('downloadRow').classList.add('hidden');
-      document.getElementById('desktopHint').classList.add('hidden');
+      const blob = dataUrlToBlob(dataUrl);
+      const file = new File([blob], 'открытка.png', { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        // Нативное меню iOS — "Сохранить фото", AirDrop и т.д.
+        overlay.classList.add('hidden');
+        await navigator.share({ files: [file] });
+      } else {
+        // Fallback для старых iOS — показываем изображение, зажать → сохранить
+        document.getElementById('finalRenderedImg').src = dataUrl;
+        document.getElementById('finalRenderedImg').classList.remove('hidden');
+        document.getElementById('finalCard').classList.add('hidden');
+        document.getElementById('iosSaveHint').classList.remove('hidden');
+        document.getElementById('desktopHint').classList.add('hidden');
+      }
     } else {
       const link = document.createElement('a');
       link.download = 'открытка.png';
@@ -556,8 +571,10 @@ async function downloadPNG() {
       showToast('PNG сохранён');
     }
   } catch (err) {
-    console.error(err);
-    showToast('Ошибка при создании PNG');
+    if (err.name !== 'AbortError') {
+      console.error(err);
+      showToast('Ошибка при создании PNG');
+    }
   } finally {
     overlay.classList.add('hidden');
   }
@@ -569,23 +586,35 @@ async function downloadPDF() {
   try {
     await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
     const dataUrl = await buildCardDataUrl();
-    const img = new Image();
-    img.onload = function () {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({
-        orientation: img.width > img.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [img.width, img.height],
-      });
-      pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
+    const img = await loadImg(dataUrl);
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: img.width > img.height ? 'landscape' : 'portrait',
+      unit: 'px',
+      format: [img.width, img.height],
+    });
+    pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
+
+    if (isIOS) {
+      const blob = pdf.output('blob');
+      const file = new File([blob], 'открытка.pdf', { type: 'application/pdf' });
+      overlay.classList.add('hidden');
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file] });
+      } else {
+        window.open(URL.createObjectURL(blob), '_blank');
+      }
+    } else {
       pdf.save('открытка.pdf');
       showToast('PDF сохранён');
-      overlay.classList.add('hidden');
-    };
-    img.src = dataUrl;
+    }
   } catch (err) {
-    console.error(err);
-    showToast('Ошибка при создании PDF');
+    if (err.name !== 'AbortError') {
+      console.error(err);
+      showToast('Ошибка при создании PDF');
+    }
+  } finally {
     overlay.classList.add('hidden');
   }
 }
