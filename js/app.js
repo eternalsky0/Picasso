@@ -329,7 +329,7 @@ function generatePrompt() {
   prompt += `.\n`;
   prompt += `Стиль: ${styleText}.\n`;
   prompt += `Объём: 2-4 предложения (не более 300 символов).\n`;
-  prompt += `Формат: только основной текст без заголовка "С днём рождения!". Без эмодзи.`;
+  prompt += `Формат: только основной текст без упоминания "С днём рождения!". Без эмодзи.`;
 
   const resultBlock = document.getElementById('aiResult');
   const promptTextarea = document.getElementById('aiPromptText');
