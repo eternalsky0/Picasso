@@ -141,7 +141,18 @@ function handleFileUpload(e) {
 // =====================
 
 function goToStage(step) {
-  if (step === 3) renderFinalCard();
+  if (step === 3) {
+    // Сброс состояния шага 3 перед входом
+    cachedPngDataUrl = null;
+    renderFinalCard();
+    document.getElementById('finalRenderedImg').classList.add('hidden');
+    document.getElementById('finalRenderedImg').src = '';
+    document.getElementById('finalCard').classList.remove('hidden');
+    document.getElementById('iosSaveHint').classList.add('hidden');
+    document.getElementById('downloadRow').classList.remove('hidden');
+    document.getElementById('desktopHint').classList.remove('hidden');
+    document.getElementById('stage3Subtitle').textContent = 'Подготовка изображения…';
+  }
 
   document.querySelectorAll('.stage').forEach(el => el.classList.remove('active'));
   document.getElementById('stage' + step).classList.add('active');
@@ -156,6 +167,8 @@ function goToStage(step) {
 
   state.stage = step;
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (step === 3) requestAnimationFrame(autoRenderPng);
 }
 
 // =====================
@@ -380,74 +393,59 @@ async function loadExportLibs() {
   ]);
 }
 
-async function downloadPNG() {
-  const card = document.getElementById('finalCard');
-  const overlay = document.getElementById('loadingOverlay');
-  overlay.classList.remove('hidden');
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+let cachedPngDataUrl = null;
 
-  try { await loadExportLibs(); } catch {
-    showToast('Ошибка загрузки библиотек — проверьте интернет');
-    overlay.classList.add('hidden');
-    return;
-  }
+async function autoRenderPng() {
+  const card = document.getElementById('finalCard');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  loadingOverlay.classList.remove('hidden');
 
   try {
-    const dataUrl = await domtoimage.toPng(card, {
+    await loadExportLibs();
+    cachedPngDataUrl = await domtoimage.toPng(card, {
       width: card.offsetWidth * 3,
       height: card.offsetHeight * 3,
-      style: {
-        transform: 'scale(3)',
-        transformOrigin: 'top left',
-        borderRadius: '0',
-      }
+      style: { transform: 'scale(3)', transformOrigin: 'top left', borderRadius: '0' }
     });
 
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
-    const file = new File([blob], 'открытка.png', { type: 'image/png' });
+    // Показываем готовое изображение вместо DOM-карточки
+    const renderedImg = document.getElementById('finalRenderedImg');
+    renderedImg.src = cachedPngDataUrl;
+    renderedImg.classList.remove('hidden');
+    card.classList.add('hidden');
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file] });
-    } else {
-      const link = document.createElement('a');
-      link.download = 'открытка.png';
-      link.href = dataUrl;
-      link.click();
-      showToast('PNG сохранён');
+    document.getElementById('stage3Subtitle').textContent = 'Скачайте в удобном формате';
+
+    if (isIOS) {
+      document.getElementById('iosSaveHint').classList.remove('hidden');
+      document.getElementById('downloadRow').classList.add('hidden');
+      document.getElementById('desktopHint').classList.add('hidden');
     }
   } catch (err) {
-    if (err.name !== 'AbortError') {
-      console.error(err);
-      showToast('Ошибка при создании PNG');
-    }
+    console.error('Render error:', err);
+    document.getElementById('stage3Subtitle').textContent = 'Скачайте в удобном формате';
+    showToast('Не удалось подготовить изображение');
   } finally {
-    overlay.classList.add('hidden');
+    loadingOverlay.classList.add('hidden');
   }
 }
 
+function downloadPNG() {
+  if (!cachedPngDataUrl) { showToast('Изображение ещё готовится…'); return; }
+  const link = document.createElement('a');
+  link.download = 'открытка.png';
+  link.href = cachedPngDataUrl;
+  link.click();
+  showToast('PNG сохранён');
+}
+
 async function downloadPDF() {
-  const card = document.getElementById('finalCard');
+  if (!cachedPngDataUrl) { showToast('Изображение ещё готовится…'); return; }
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
-
-  try { await loadExportLibs(); } catch {
-    showToast('Ошибка загрузки библиотек — проверьте интернет');
-    overlay.classList.add('hidden');
-    return;
-  }
-
   try {
-    const dataUrl = await domtoimage.toPng(card, {
-      cacheBust: true,
-      width: card.offsetWidth * 3,
-      height: card.offsetHeight * 3,
-      style: {
-        transform: 'scale(3)',
-        transformOrigin: 'top left',
-        borderRadius: '0',
-      }
-    });
-
+    await loadExportLibs();
     const img = new Image();
     img.onload = function () {
       const { jsPDF } = window.jspdf;
@@ -456,12 +454,12 @@ async function downloadPDF() {
         unit: 'px',
         format: [img.width, img.height],
       });
-      pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
+      pdf.addImage(cachedPngDataUrl, 'PNG', 0, 0, img.width, img.height);
       pdf.save('открытка.pdf');
       showToast('PDF сохранён');
       overlay.classList.add('hidden');
     };
-    img.src = dataUrl;
+    img.src = cachedPngDataUrl;
   } catch (err) {
     console.error(err);
     showToast('Ошибка при создании PDF');

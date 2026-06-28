@@ -918,6 +918,33 @@ main {
 }
 
 /* =====================
+   Stage 3: Rendered image & iOS hint
+   ===================== */
+.final-rendered-img {
+  max-width: 100%;
+  border-radius: var(--radius-lg);
+  display: block;
+  margin: 0 auto;
+  box-shadow: var(--shadow-md);
+  /* Разрешаем контекстное меню на iOS для "Сохранить фото" */
+  -webkit-touch-callout: default;
+  -webkit-user-select: auto;
+}
+.final-rendered-img.hidden { display: none; }
+
+.ios-save-hint {
+  background: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #a5d6a7;
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  font-size: 15px;
+  text-align: center;
+  line-height: 1.5;
+}
+.ios-save-hint.hidden { display: none; }
+
+/* =====================
    Loading Overlay
    ===================== */
 .loading-overlay {

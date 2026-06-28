@@ -181,10 +181,11 @@
       <div class="stage-wrap center">
         <div class="stage-header">
           <h2>Открытка готова!</h2>
-          <p>Скачайте в удобном формате</p>
+          <p id="stage3Subtitle">Подготовка изображения…</p>
         </div>
 
         <div class="final-card-wrap">
+          <!-- Используется только для рендера, скрыт после -->
           <div class="card card-lg" id="finalCard">
             <div class="card-image-block">
               <img class="card-bg-img" id="finalBgImg" src="" alt="">
@@ -197,17 +198,24 @@
               <p class="c-footer" id="finalFooter"></p>
             </div>
           </div>
+          <!-- Готовое изображение — показывается после рендера -->
+          <img class="final-rendered-img hidden" id="finalRenderedImg" alt="Открытка">
         </div>
 
-        <div class="download-row">
+        <!-- Подсказка для iOS (зажать и сохранить) -->
+        <p class="ios-save-hint hidden" id="iosSaveHint">
+          Зажмите фото и выберите <strong>«Сохранить фото»</strong>
+        </p>
+
+        <!-- Кнопки для десктопа -->
+        <div class="download-row" id="downloadRow">
           <button class="btn-download" onclick="downloadPNG()">↓ PNG</button>
           <button class="btn-download btn-outline" onclick="downloadPDF()">↓ PDF</button>
         </div>
 
-        <div class="download-hint">
+        <div class="download-hint" id="desktopHint">
           <div class="download-hint-steps">
-            <div class="ai-step"><span class="ai-step-num">!</span><span><strong>iPhone:</strong> нажмите PNG — появится меню «Поделиться», выберите «Сохранить изображение»</span></div>
-            <div class="ai-step"><span class="ai-step-num">!</span><span><strong>Telegram / WhatsApp:</strong> кнопка может не сработать — откройте эту страницу в браузере (Safari или Chrome) и скачайте оттуда</span></div>
+            <div class="ai-step"><span class="ai-step-num">!</span><span><strong>Telegram / WhatsApp:</strong> кнопка может не сработать — откройте эту страницу в браузере и скачайте оттуда</span></div>
           </div>
         </div>
 
