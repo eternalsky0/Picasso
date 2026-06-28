@@ -142,8 +142,6 @@ function handleFileUpload(e) {
 
 function goToStage(step) {
   if (step === 3) {
-    // Сброс состояния шага 3 перед входом
-    cachedPngDataUrl = null;
     renderFinalCard();
     document.getElementById('finalRenderedImg').classList.add('hidden');
     document.getElementById('finalRenderedImg').src = '';
@@ -151,7 +149,6 @@ function goToStage(step) {
     document.getElementById('iosSaveHint').classList.add('hidden');
     document.getElementById('downloadRow').classList.remove('hidden');
     document.getElementById('desktopHint').classList.remove('hidden');
-    document.getElementById('stage3Subtitle').textContent = 'Подготовка изображения…';
   }
 
   document.querySelectorAll('.stage').forEach(el => el.classList.remove('active'));
@@ -167,8 +164,6 @@ function goToStage(step) {
 
   state.stage = step;
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  if (step === 3) requestAnimationFrame(autoRenderPng);
 }
 
 // =====================
@@ -394,82 +389,53 @@ async function loadExportLibs() {
 }
 
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-let cachedPngDataUrl = null;
 
-async function autoRenderPng() {
+async function renderCard() {
   const card = document.getElementById('finalCard');
-  const bgImg = document.getElementById('finalBgImg');
-  const loadingOverlay = document.getElementById('loadingOverlay');
-
-  // Ждём загрузки фонового изображения — без него domtoimage вернёт пустоту
-  if (bgImg.src && !bgImg.complete) {
-    await new Promise(resolve => {
-      bgImg.addEventListener('load', resolve, { once: true });
-      bgImg.addEventListener('error', resolve, { once: true });
-    });
-  }
-
-  loadingOverlay.classList.remove('hidden');
-
-  try {
-    await loadExportLibs();
-
-    const dataUrl = await domtoimage.toPng(card, {
-      cacheBust: true,
-      width: card.offsetWidth * 3,
-      height: card.offsetHeight * 3,
-      style: { transform: 'scale(3)', transformOrigin: 'top left', borderRadius: '0' },
-    });
-
-    // Пустой PNG весит ~70 байт в base64 — если меньше 2KB, рендер провалился
-    if (!dataUrl || dataUrl.length < 2000) throw new Error('empty render');
-
-    cachedPngDataUrl = dataUrl;
-
-    // Подменяем DOM-карточку готовым изображением
-    const renderedImg = document.getElementById('finalRenderedImg');
-    renderedImg.src = dataUrl;
-    renderedImg.classList.remove('hidden');
-    card.classList.add('hidden');
-    document.getElementById('stage3Subtitle').textContent = 'Скачайте в удобном формате';
-
-    if (isIOS) {
-      document.getElementById('iosSaveHint').classList.remove('hidden');
-      document.getElementById('downloadRow').classList.add('hidden');
-      document.getElementById('desktopHint').classList.add('hidden');
-    }
-
-  } catch (err) {
-    console.error('Render failed:', err);
-    // Оставляем DOM-карточку видимой, кнопки скачивания доступны
-    document.getElementById('stage3Subtitle').textContent = 'Скачайте в удобном формате';
-    document.getElementById('finalCard').classList.remove('hidden');
-  } finally {
-    loadingOverlay.classList.add('hidden');
-  }
+  await loadExportLibs();
+  return domtoimage.toPng(card, {
+    cacheBust: true,
+    width: card.offsetWidth * 3,
+    height: card.offsetHeight * 3,
+    style: { transform: 'scale(3)', transformOrigin: 'top left', borderRadius: '0' },
+  });
 }
 
 async function downloadPNG() {
-  if (isIOS) {
-    // На iOS рендер уже сделал autoRenderPng — пользователь зажимает картинку.
-    // Если автоматический рендер провалился, пробуем снова вручную.
-    if (!cachedPngDataUrl) await autoRenderPng();
-    return;
-  }
-  if (!cachedPngDataUrl) { showToast('Изображение ещё готовится…'); return; }
-  const link = document.createElement('a');
-  link.download = 'открытка.png';
-  link.href = cachedPngDataUrl;
-  link.click();
-  showToast('PNG сохранён');
-}
-
-async function downloadPDF() {
-  if (!cachedPngDataUrl) { showToast('Изображение ещё готовится…'); return; }
   const overlay = document.getElementById('loadingOverlay');
   overlay.classList.remove('hidden');
   try {
-    await loadExportLibs();
+    const dataUrl = await renderCard();
+
+    if (isIOS) {
+      // Показываем PNG прямо на месте карточки — пользователь зажимает и сохраняет
+      const renderedImg = document.getElementById('finalRenderedImg');
+      renderedImg.src = dataUrl;
+      renderedImg.classList.remove('hidden');
+      document.getElementById('finalCard').classList.add('hidden');
+      document.getElementById('iosSaveHint').classList.remove('hidden');
+      document.getElementById('downloadRow').classList.add('hidden');
+      document.getElementById('desktopHint').classList.add('hidden');
+    } else {
+      const link = document.createElement('a');
+      link.download = 'открытка.png';
+      link.href = dataUrl;
+      link.click();
+      showToast('PNG сохранён');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Ошибка при создании PNG');
+  } finally {
+    overlay.classList.add('hidden');
+  }
+}
+
+async function downloadPDF() {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.remove('hidden');
+  try {
+    const dataUrl = await renderCard();
     const img = new Image();
     img.onload = function () {
       const { jsPDF } = window.jspdf;
@@ -478,12 +444,12 @@ async function downloadPDF() {
         unit: 'px',
         format: [img.width, img.height],
       });
-      pdf.addImage(cachedPngDataUrl, 'PNG', 0, 0, img.width, img.height);
+      pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height);
       pdf.save('открытка.pdf');
       showToast('PDF сохранён');
       overlay.classList.add('hidden');
     };
-    img.src = cachedPngDataUrl;
+    img.src = dataUrl;
   } catch (err) {
     console.error(err);
     showToast('Ошибка при создании PDF');
