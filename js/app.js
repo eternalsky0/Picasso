@@ -398,23 +398,39 @@ let cachedPngDataUrl = null;
 
 async function autoRenderPng() {
   const card = document.getElementById('finalCard');
+  const bgImg = document.getElementById('finalBgImg');
   const loadingOverlay = document.getElementById('loadingOverlay');
+
+  // Ждём загрузки фонового изображения — без него domtoimage вернёт пустоту
+  if (bgImg.src && !bgImg.complete) {
+    await new Promise(resolve => {
+      bgImg.addEventListener('load', resolve, { once: true });
+      bgImg.addEventListener('error', resolve, { once: true });
+    });
+  }
+
   loadingOverlay.classList.remove('hidden');
 
   try {
     await loadExportLibs();
-    cachedPngDataUrl = await domtoimage.toPng(card, {
+
+    const dataUrl = await domtoimage.toPng(card, {
+      cacheBust: true,
       width: card.offsetWidth * 3,
       height: card.offsetHeight * 3,
-      style: { transform: 'scale(3)', transformOrigin: 'top left', borderRadius: '0' }
+      style: { transform: 'scale(3)', transformOrigin: 'top left', borderRadius: '0' },
     });
 
-    // Показываем готовое изображение вместо DOM-карточки
+    // Пустой PNG весит ~70 байт в base64 — если меньше 2KB, рендер провалился
+    if (!dataUrl || dataUrl.length < 2000) throw new Error('empty render');
+
+    cachedPngDataUrl = dataUrl;
+
+    // Подменяем DOM-карточку готовым изображением
     const renderedImg = document.getElementById('finalRenderedImg');
-    renderedImg.src = cachedPngDataUrl;
+    renderedImg.src = dataUrl;
     renderedImg.classList.remove('hidden');
     card.classList.add('hidden');
-
     document.getElementById('stage3Subtitle').textContent = 'Скачайте в удобном формате';
 
     if (isIOS) {
@@ -422,16 +438,24 @@ async function autoRenderPng() {
       document.getElementById('downloadRow').classList.add('hidden');
       document.getElementById('desktopHint').classList.add('hidden');
     }
+
   } catch (err) {
-    console.error('Render error:', err);
+    console.error('Render failed:', err);
+    // Оставляем DOM-карточку видимой, кнопки скачивания доступны
     document.getElementById('stage3Subtitle').textContent = 'Скачайте в удобном формате';
-    showToast('Не удалось подготовить изображение');
+    document.getElementById('finalCard').classList.remove('hidden');
   } finally {
     loadingOverlay.classList.add('hidden');
   }
 }
 
-function downloadPNG() {
+async function downloadPNG() {
+  if (isIOS) {
+    // На iOS рендер уже сделал autoRenderPng — пользователь зажимает картинку.
+    // Если автоматический рендер провалился, пробуем снова вручную.
+    if (!cachedPngDataUrl) await autoRenderPng();
+    return;
+  }
   if (!cachedPngDataUrl) { showToast('Изображение ещё готовится…'); return; }
   const link = document.createElement('a');
   link.download = 'открытка.png';
