@@ -4,16 +4,16 @@
 
 // Все фоновые изображения из assets/images/new/ — добавьте новый файл в папку и укажите имя здесь
 const TEMPLATE_IMAGES = [
-  'assets/images/new/preset_image_1.webp',
-  'assets/images/new/preset_image_2.webp',
-  'assets/images/new/preset_image_3.webp',
-  'assets/images/new/preset_image_4.webp',
-  'assets/images/new/preset_image_5.webp',
-  'assets/images/new/preset_image_6.webp',
-  'assets/images/new/preset_image_7.webp',
-  'assets/images/new/3_1920x1080_ЛЕТО_2025.webp',
-  'assets/images/new/5_1920x1080_ЛЕТО_2025.webp',
-  'assets/images/new/6_1920x1080_ЛЕТО_2025.webp',
+  'assets/images/new/preset_image_1.png',
+  'assets/images/new/preset_image_2.png',
+  'assets/images/new/preset_image_3.png',
+  'assets/images/new/preset_image_4.png',
+  'assets/images/new/preset_image_5.png',
+  'assets/images/new/preset_image_6.png',
+  'assets/images/new/preset_image_7.png',
+  'assets/images/new/3_1920x1080_ЛЕТО_2025.jpg',
+  'assets/images/new/5_1920x1080_ЛЕТО_2025.jpg',
+  'assets/images/new/6_1920x1080_ЛЕТО_2025.jpg',
 ];
 
 const TEXT_PRESETS = [
