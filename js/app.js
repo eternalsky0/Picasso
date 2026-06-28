@@ -393,7 +393,6 @@ async function downloadPNG() {
 
   try {
     const dataUrl = await domtoimage.toPng(card, {
-      cacheBust: true,
       width: card.offsetWidth * 3,
       height: card.offsetHeight * 3,
       style: {
@@ -403,14 +402,24 @@ async function downloadPNG() {
       }
     });
 
-    const link = document.createElement('a');
-    link.download = 'открытка.png';
-    link.href = dataUrl;
-    link.click();
-    showToast('PNG сохранён');
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], 'открытка.png', { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });
+    } else {
+      const link = document.createElement('a');
+      link.download = 'открытка.png';
+      link.href = dataUrl;
+      link.click();
+      showToast('PNG сохранён');
+    }
   } catch (err) {
-    console.error(err);
-    showToast('Ошибка при создании PNG');
+    if (err.name !== 'AbortError') {
+      console.error(err);
+      showToast('Ошибка при создании PNG');
+    }
   } finally {
     overlay.classList.add('hidden');
   }
