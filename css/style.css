@@ -945,6 +945,19 @@ main {
 .ios-save-hint.hidden { display: none; }
 
 /* =====================
+   iOS input zoom fix
+   Safari зумит страницу при фокусе на input с font-size < 16px
+   ===================== */
+@supports (-webkit-touch-callout: none) {
+  .field input,
+  .field textarea,
+  .ai-field input,
+  #aiPromptText {
+    font-size: 16px;
+  }
+}
+
+/* =====================
    Loading Overlay
    ===================== */
 .loading-overlay {
