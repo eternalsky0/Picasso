@@ -59,6 +59,15 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTextPresets();
   renderFooterPresets();
   syncPreview();
+
+  // Mark body when custom font is ready so card text doesn't flash
+  Promise.race([
+    document.fonts.ready,
+    new Promise(r => setTimeout(r, 2000)),
+  ]).then(() => {
+    document.body.classList.add('fonts-loaded');
+    syncPreview(); // re-render with correct font metrics
+  });
 });
 
 // =====================

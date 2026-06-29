@@ -36,6 +36,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+
 button { cursor: pointer; font-family: inherit; }
 input, textarea { font-family: inherit; }
 
@@ -656,10 +657,22 @@ main {
 /* =====================
    Preview Panel
    ===================== */
-.preview-panel { display: none; }
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
 
 @media (min-width: 860px) {
-  .preview-panel { display: block; }
+  .preview-panel {
+    display: block;
+    padding-top: 0;
+    border-top: none;
+    margin-top: 0;
+  }
   .preview-sticky {
     position: sticky;
     top: 80px;
@@ -685,6 +698,17 @@ main {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow-md);
+  /* iOS Safari fix: overflow:hidden + border-radius rendering artifact */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* On mobile, constrain the preview card to a readable size */
+@media (max-width: 859px) {
+  .preview-panel .preview-sticky {
+    width: 260px;
+    max-width: 100%;
+  }
 }
 
 .card-lg {
@@ -737,6 +761,9 @@ main {
   color: white;
   font-family: 'SB Sans Interface', sans-serif;
   text-align: left;
+  /* Smooth text render on all devices */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .card-text .c-header {
