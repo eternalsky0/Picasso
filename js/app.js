@@ -500,7 +500,7 @@ async function buildCardDataUrl() {
   if (header)      { mCtx.font = `600 ${19*S}px ${FONT}`;  textH += measureWrappedHeight(mCtx, header,      TEXT_W, Math.round(19*S*1.2))  + 8*S; }
   if (appeal)      {                                          textH += 12*S + 5*S; }
   if (description) { mCtx.font = `${11*S}px ${FONT}`;       textH += measureWrappedHeight(mCtx, description, TEXT_W, Math.round(11*S*1.55)) + 8*S; }
-  if (footer)      {                                          textH += 11*S; }
+  if (footer)      { mCtx.font = `${11*S}px ${FONT}`;        textH += measureWrappedHeight(mCtx, footer, TEXT_W, Math.round(11*S*1.4)); }
   textH += PAD_BOT;
 
   const TOTAL_H = IMG_H + Math.max(textH, 60*S);
@@ -568,7 +568,7 @@ async function buildCardDataUrl() {
   if (footer) {
     ctx.font = `${11*S}px ${FONT}`;
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fillText(footer, PAD_X, y);
+    wrapText(ctx, footer, PAD_X, y, TEXT_W, Math.round(11*S*1.4));
   }
 
   return canvas.toDataURL('image/png');
