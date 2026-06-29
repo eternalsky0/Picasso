@@ -101,10 +101,6 @@
               </button>
               <div class="text-templates-list hidden" id="textTemplatesList"></div>
             </div>
-            <div class="field">
-              <label for="fieldFooter">Подпись</label>
-              <input type="text" id="fieldFooter" placeholder="Иван Петров" oninput="syncPreview()" maxlength="100">
-            </div>
           </div>
 
           <!-- Помощь ИИ -->
@@ -145,6 +141,20 @@
                   <button class="btn-copy" id="btnCopy" onclick="copyPrompt()">Скопировать промт</button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="fields">
+            <div class="field">
+              <label for="fieldFooter">Подпись</label>
+              <textarea id="fieldFooter" rows="2" placeholder="Иван Петров" oninput="syncPreview(); autoResize(this)" maxlength="500"></textarea>
+            </div>
+            <div class="field presets-inline">
+              <button class="presets-toggle" onclick="toggleFooterPresets()" id="footerPresetsToggle">
+                <span>Готовые подписи</span>
+                <span class="presets-arrow" id="footerPresetsArrow">▼</span>
+              </button>
+              <div class="text-templates-list hidden" id="footerTemplatesList"></div>
             </div>
           </div>
 

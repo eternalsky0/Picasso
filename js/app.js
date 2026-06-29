@@ -29,6 +29,12 @@ const TEXT_PRESETS = [
   'Пусть планы воплощаются в жизнь, а неожиданности будут только приятными. Желаем уверенности, хорошего окружения и всего, что делает жизнь насыщенной.',
 ];
 
+const FOOTER_PRESETS = [
+  'С уважением, \nАрхангельское отделение №8637 ПАО Сбербанк',
+  'С уважением, Управляющий \nАрхангельским отделением ПАО Сбербанк\nДмитрий Гордеев',
+  'С уважением, Заместитель управляющего\nАрхангельского отделения ПАО Сбербанк\nРуслан Атанаев',
+];
+
 const AI_STYLE_TEXT = {
   soulful: 'мягкий, личный, искренний, без шаблонов и канцелярита, текст должен звучать естественно и по-человечески, будто поздравление написано лично, добавь немного тепла и лёгкой эмоциональности, но без излишней сентиментальности, не используй избитые пожелания вроде «успехов во всех начинаниях» или «крепкого здоровья и счастья»',
   official: 'официально-деловой, сдержанный, статусный, текст должен звучать современно и профессионально, без излишнего пафоса, избегай панибратства и фамильярности, акцент сделай на уважении, профессиональных качествах, авторитете и пожеланиях стабильности и развития',
@@ -51,6 +57,7 @@ const state = {
 document.addEventListener('DOMContentLoaded', () => {
   renderTemplates();
   renderTextPresets();
+  renderFooterPresets();
   syncPreview();
 });
 
@@ -346,6 +353,40 @@ function togglePresets() {
   arrow.style.transform = isHidden ? '' : 'rotate(180deg)';
 }
 
+function renderFooterPresets() {
+  const list = document.getElementById('footerTemplatesList');
+  if (!list) return;
+
+  FOOTER_PRESETS.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tpl-item footer-tpl-item';
+    btn.textContent = text;
+    btn.onclick = () => applyFooterPreset(text, i);
+    list.appendChild(btn);
+  });
+}
+
+function applyFooterPreset(text, index) {
+  const field = document.getElementById('fieldFooter');
+  if (!field) return;
+  field.value = text;
+  autoResize(field);
+  syncPreview();
+
+  document.querySelectorAll('.footer-tpl-item').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+
+  showToast('Подпись применена');
+}
+
+function toggleFooterPresets() {
+  const list = document.getElementById('footerTemplatesList');
+  const arrow = document.getElementById('footerPresetsArrow');
+  const isHidden = list.classList.toggle('hidden');
+  arrow.style.transform = isHidden ? '' : 'rotate(180deg)';
+}
+
 function copyPrompt() {
   const text = document.getElementById('aiPromptText')?.value;
   if (!text) return;
@@ -637,6 +678,7 @@ function resetApp() {
   document.getElementById('aiResult').classList.add('hidden');
   document.getElementById('aiPromptText').value = '';
   document.querySelectorAll('.tpl-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.footer-tpl-item').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('input[name="aiGender"]')[0].checked = true;
   document.querySelectorAll('input[name="aiStyle"]')[0].checked = true;
 

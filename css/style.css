@@ -477,13 +477,13 @@ main {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 10px 13px;
+  padding: 13px 16px;
   background: var(--gray-50);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 13px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
   font-weight: 500;
-  color: var(--gray-700);
+  color: var(--gray-900);
   transition: background 0.15s;
 }
 
@@ -525,6 +525,10 @@ main {
   border-color: var(--accent);
   background: var(--accent-light);
   color: var(--gray-900);
+}
+
+.footer-tpl-item {
+  white-space: pre-line;
 }
 
 /* AI Form */
@@ -759,6 +763,9 @@ main {
 .card-text .c-footer {
   font-size: 11px;
   opacity: 0.75;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 /* =====================
