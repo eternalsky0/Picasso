@@ -468,8 +468,12 @@ function measureWrappedHeight(ctx, text, maxWidth, lineHeight) {
 
 async function buildCardDataUrl() {
   const S = 3;
+
+  // Гарантируем что layout готов перед чтением offsetWidth
+  await new Promise(r => requestAnimationFrame(r));
+
   const cardEl = document.getElementById('finalCard');
-  const W = cardEl.offsetWidth * S;
+  const W = Math.max((cardEl ? cardEl.offsetWidth : 0) || 280, 1) * S;
   const IMG_H = Math.round(W * 3 / 4);   // соотношение 4:3 из CSS
   const PAD_X = 16 * S;
   const PAD_TOP = 14 * S;
@@ -485,7 +489,11 @@ async function buildCardDataUrl() {
     showLogo ? loadImg('assets/logo/sber-logo.png').catch(() => null) : Promise.resolve(null),
   ]);
 
-  await document.fonts.ready;
+  // Таймаут 3с — защита от iOS Safari бага где document.fonts.ready зависает
+  await Promise.race([
+    document.fonts.ready,
+    new Promise(r => setTimeout(r, 3000)),
+  ]);
 
   const header      = val('fieldHeader');
   const appeal      = val('fieldAppeal');
