@@ -605,7 +605,10 @@ async function buildCardDataUrl() {
   if (footer) {
     ctx.font = `${11*S}px ${FONT}`;
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    wrapText(ctx, footer, PAD_X, y, TEXT_W, Math.round(11*S*1.4));
+    // подпись выравнивается по правому краю
+    ctx.textAlign = 'right';
+    wrapText(ctx, footer, W - PAD_X, y, TEXT_W, Math.round(11*S*1.4));
+    ctx.textAlign = 'left';
   }
 
   return canvas.toDataURL('image/png');

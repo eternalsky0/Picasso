@@ -801,6 +801,7 @@ main {
 .card-text .c-footer {
   font-size: 11px;
   opacity: 0.75;
+  text-align: right;
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
