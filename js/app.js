@@ -441,38 +441,58 @@ function loadImg(src) {
   });
 }
 
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+// Разбивает слово, которое само по себе шире строки, посимвольно
+function splitLongWord(ctx, word, maxWidth) {
+  const parts = [];
+  let chunk = '';
+  for (const ch of word) {
+    const test = chunk + ch;
+    if (chunk && ctx.measureText(test).width > maxWidth) {
+      parts.push(chunk);
+      chunk = ch;
+    } else {
+      chunk = test;
+    }
+  }
+  if (chunk) parts.push(chunk);
+  return parts;
+}
+
+// Возвращает массив готовых строк с учётом \n, переносов по словам и по символам
+function layoutLines(ctx, text, maxWidth) {
+  const lines = [];
   for (const para of text.split('\n')) {
-    const words = para.split(' ');
     let line = '';
-    for (const word of words) {
+    for (const word of para.split(' ')) {
       const test = line ? line + ' ' + word : word;
       if (ctx.measureText(test).width > maxWidth && line) {
-        ctx.fillText(line, x, y);
-        y += lineHeight;
-        line = word;
+        lines.push(line);
+        line = '';
+      }
+      // слово не помещается даже в пустую строку — режем посимвольно
+      if (!line && ctx.measureText(word).width > maxWidth) {
+        const parts = splitLongWord(ctx, word, maxWidth);
+        for (let i = 0; i < parts.length - 1; i++) lines.push(parts[i]);
+        line = parts[parts.length - 1] || '';
       } else {
-        line = test;
+        line = line ? line + ' ' + word : word;
       }
     }
-    if (line) { ctx.fillText(line, x, y); y += lineHeight; }
+    lines.push(line);
+  }
+  return lines;
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  for (const line of layoutLines(ctx, text, maxWidth)) {
+    if (line) ctx.fillText(line, x, y);
+    y += lineHeight;
   }
   return y;
 }
 
 function measureWrappedHeight(ctx, text, maxWidth, lineHeight) {
-  let h = 0;
-  for (const para of text.split('\n')) {
-    const words = para.split(' ');
-    let line = '';
-    for (const word of words) {
-      const test = line ? line + ' ' + word : word;
-      if (ctx.measureText(test).width > maxWidth && line) { h += lineHeight; line = word; }
-      else line = test;
-    }
-    h += lineHeight;
-  }
-  return h || lineHeight;
+  return layoutLines(ctx, text, maxWidth).length * lineHeight || lineHeight;
 }
 
 async function buildCardDataUrl() {
@@ -515,7 +535,7 @@ async function buildCardDataUrl() {
   const mCtx = mc.getContext('2d');
   let textH = PAD_TOP;
   if (header)      { mCtx.font = `600 ${19*S}px ${FONT}`;  textH += measureWrappedHeight(mCtx, header,      TEXT_W, Math.round(19*S*1.2))  + 8*S; }
-  if (appeal)      {                                          textH += 12*S + 5*S; }
+  if (appeal)      { mCtx.font = `500 ${12*S}px ${FONT}`;    textH += measureWrappedHeight(mCtx, appeal,      TEXT_W, Math.round(12*S*1.2))  + 5*S; }
   if (description) { mCtx.font = `${11*S}px ${FONT}`;       textH += measureWrappedHeight(mCtx, description, TEXT_W, Math.round(11*S*1.55)) + 8*S; }
   if (footer)      { mCtx.font = `${11*S}px ${FONT}`;        textH += measureWrappedHeight(mCtx, footer, TEXT_W, Math.round(11*S*1.4)); }
   textH += PAD_BOT;
@@ -573,8 +593,8 @@ async function buildCardDataUrl() {
   if (appeal) {
     ctx.font = `500 ${12*S}px ${FONT}`;
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillText(appeal, PAD_X, y);
-    y += 12*S + 5*S;
+    y = wrapText(ctx, appeal, PAD_X, y, TEXT_W, Math.round(12*S*1.2));
+    y += 5*S;
   }
   if (description) {
     ctx.font = `${11*S}px ${FONT}`;

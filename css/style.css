@@ -764,6 +764,16 @@ main {
   /* Smooth text render on all devices */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* длинные слова не должны уезжать за границу карточки */
+  min-width: 0;
+  overflow: hidden;
+}
+
+.card-text > p {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .card-text .c-header {
@@ -785,6 +795,7 @@ main {
   line-height: 1.55;
   margin-bottom: 8px;
   opacity: 0.85;
+  white-space: pre-wrap; /* сохраняем переносы строк из textarea */
 }
 
 .card-text .c-footer {
